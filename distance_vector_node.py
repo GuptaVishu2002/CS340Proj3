@@ -25,22 +25,29 @@ class Distance_Vector_Node(Node):
             self.neighbors_dv_set.pop(neighbor)
         else:
             if neighbor not in self.neighbors:
-                self.neighbors.append(neighbor)                                # add a new neighbor in to self.neighbors
-            self.direct_link_cost.update({str(neighbor): [latency, neighbor]})       # update the direct link cost
-        candidate_dv = copy.deepcopy(self.direct_link_cost)               # use direct link as candidate DV at first
+                # add a new neighbor in to self.neighbors
+                self.neighbors.append(neighbor)
+            # update the direct link cost
+            self.direct_link_cost.update({str(neighbor): [latency, neighbor]})
+        # use direct link as candidate DV at first
+        candidate_dv = copy.deepcopy(self.direct_link_cost)
         for i in self.neighbors:                                          # find neighbors' DV
             if i in self.neighbors_dv_set.keys():
                 for j in self.neighbors_dv_set[i]:                        # neighbor i's DV
-                    if (j not in candidate_dv) and (int(j) != self.id) and (self.id not in self.neighbors_dv_set[i][j][1:]):     # neighbor i's DV has a destination that isn't my neighbor and that's not myself.
-                        candidate_dv.update({j: [0,0]})                   # add this destination and cost to my candidate DV
+                    # neighbor i's DV has a destination that isn't my neighbor and that's not myself.
+                    if (j not in candidate_dv) and (int(j) != self.id) and (self.id not in self.neighbors_dv_set[i][j][1:]):
+                        # add this destination and cost to my candidate DV
+                        candidate_dv.update({j: [0, 0]})
                         candidate_dv[j][0] = self.neighbors_dv_set[i][j][0] + self.direct_link_cost[str(i)][0]
                         candidate_dv[j][1:] = [i] + self.neighbors_dv_set[i][j][1:]
-                    elif (int(j) != self.id) and (self.id not in self.neighbors_dv_set[i][j][1:]) :                               # neighbor i's DV has a destination that is also my neighbor.
-                        if ((self.direct_link_cost[str(i)][0]+self.neighbors_dv_set[i][j][0]) < candidate_dv[j][0]) \
-                                and self.id not in self.neighbors_dv_set[i][j][1:]:                                     # compare the cost and update my candidate DV
+                    # neighbor i's DV has a destination that is also my neighbor.
+                    elif (int(j) != self.id) and (self.id not in self.neighbors_dv_set[i][j][1:]):
+                        # compare the cost and update my candidate DV
+                        if (self.direct_link_cost[str(i)][0] + self.neighbors_dv_set[i][j][0]) < candidate_dv[j][0]:
                             candidate_dv[j][0] = self.neighbors_dv_set[i][j][0] + self.direct_link_cost[str(i)][0]
                             candidate_dv[j][1:] = [i] + self.neighbors_dv_set[i][j][1:]
-        if self.dv != candidate_dv:                                       # if my DV changes, I update it and send it to my neighbors
+        # if my DV changes, I update it and send it to my neighbors
+        if self.dv != candidate_dv:
             self.dv = candidate_dv
             msg = json.dumps([self.id, self.dv, self.seq])
             self.seq += 1
@@ -67,8 +74,7 @@ class Distance_Vector_Node(Node):
                         candidate_dv[j][0] = self.neighbors_dv_set[i][j][0] + self.direct_link_cost[str(i)][0]
                         candidate_dv[j][1:] = [i] + self.neighbors_dv_set[i][j][1:]
                     elif (int(j) != self.id) and (self.id not in self.neighbors_dv_set[i][j][1:]):
-                        if ((self.direct_link_cost[str(i)][0] + self.neighbors_dv_set[i][j][0]) < candidate_dv[j][0]) \
-                                and self.id not in self.neighbors_dv_set[i][j][1:]:
+                        if (self.direct_link_cost[str(i)][0] + self.neighbors_dv_set[i][j][0]) < candidate_dv[j][0]:
                             candidate_dv[j][0] = self.neighbors_dv_set[i][j][0] + self.direct_link_cost[str(i)][0]
                             candidate_dv[j][1:] = [i] + self.neighbors_dv_set[i][j][1:]
         if self.dv != candidate_dv:
