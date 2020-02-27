@@ -1,6 +1,6 @@
 from simulator.node import Node
 
-
+# also implement Dijkstra’s Algorithm
 class Link_State_Node(Node):
     def __init__(self, id):
         super().__init__(id)

@@ -12,12 +12,23 @@ class Distance_Vector_Node(Node):
     # Fill in this function
     def link_has_been_updated(self, neighbor, latency):
         # latency = -1 if delete a link
+        # update your tables
+
+        # send further messages to your neighbors
+
         pass
 
     # Fill in this function
     def process_incoming_routing_message(self, m):
+        # call self.send_to_neighbors or self.send_to_neighbor
+
+        # update your tables
+
         pass
 
     # Return a neighbor, -1 if no path to destination
     def get_next_hop(self, destination):
+        # consult routing table
+
+        # return next nod
         return -1
