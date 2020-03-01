@@ -34,6 +34,7 @@ class Distance_Vector_Node(Node):
         # use direct link as candidate DV at first
         candidate_dv = copy.deepcopy(self.direct_link_cost)
         for i in self.neighbors:  # find neighbors' DV
+            # print(i)
             if i in self.neighbors_dv_set.keys():
                 for j in self.neighbors_dv_set[i]:  # neighbor i's DV
                     # neighbor i's DV has a destination that isn't in my DV list and not myself either.
@@ -54,7 +55,7 @@ class Distance_Vector_Node(Node):
             msg = json.dumps([self.id, self.dv, self.seq])
             self.seq += 1
             self.send_to_neighbors(msg)
-        # print(self.id,':',self.dv)
+        print(self.id,':',self.dv)
 
     # Fill in this function
     def process_incoming_routing_message(self, m):
@@ -84,7 +85,7 @@ class Distance_Vector_Node(Node):
             msg = json.dumps([self.id, self.dv, self.seq])
             self.seq += 1
             self.send_to_neighbors(msg)
-        # print(self.id, ':', self.dv)
+        print(self.id, ':', self.dv)
 
     # Return a neighbor, -1 if no path to destination
     def get_next_hop(self, destination):
