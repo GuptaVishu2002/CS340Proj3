@@ -19,7 +19,6 @@ class Link_State_Node(Node):
     # Fill in this function
     def link_has_been_updated(self, neighbor, latency):
         # latency = -1 if delete a link
-
         # store the link in graph
         # if neighbor == 9 and self.id ==11:
             # print('l',latency)
@@ -132,7 +131,6 @@ class Link_State_Node(Node):
         dist = {}
         prev = {}
         graph_nodes = self.get_graph_nodes()
-        # print(graph_nodes)
         for v in graph_nodes:
             dist[v] = sys.maxsize
             prev[v] = None

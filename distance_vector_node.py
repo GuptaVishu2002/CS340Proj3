@@ -20,6 +20,7 @@ class Distance_Vector_Node(Node):
     # Fill in this function
     def link_has_been_updated(self, neighbor, latency):
         # latency = -1 if delete a link
+
         if latency == -1 and neighbor in self.neighbors:
             self.neighbors.remove(neighbor)
             self.direct_link_cost.pop(str(neighbor))
@@ -90,3 +91,4 @@ class Distance_Vector_Node(Node):
     # Return a neighbor, -1 if no path to destination
     def get_next_hop(self, destination):
         return self.dv[str(destination)][1]
+
