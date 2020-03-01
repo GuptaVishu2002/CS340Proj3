@@ -31,7 +31,7 @@ class Link_State_Node(Node):
             self.all_edges.pop((self.id,neighbor))
             self.all_edges.pop((neighbor, self.id))
 
-            msg = json.dumps([self.id, neighbor, latency, self.get_time()])
+            msg = json.dumps([self.id, neighbor, latency, self.get_time(), self.id])
 
             # self.seq += 1
             self.send_to_neighbors(msg)
@@ -42,36 +42,47 @@ class Link_State_Node(Node):
             self.all_edges.update({(self.id, neighbor): latency})
             self.all_edges.update({(neighbor, self.id): latency})
 
+            self.edges_seq.update({(neighbor, self.id):self.get_time()})
+            self.edges_seq.update({(self.id, neighbor): self.get_time()})
+
             if neighbor not in self.neighbors:
                 self.neighbors.append(neighbor)
                 # self.seq += 1
-                msg = json.dumps([self.id, neighbor, latency, self.get_time()])
+                msg = json.dumps([self.id, neighbor, latency, self.get_time(),self.id])
                 self.send_to_neighbors(msg)
 
                 # share link to neighbors
                 for M,N in self.all_edges.keys():
                     ltc = self.all_edges.get((M,N))
-                    msg = json.dumps([M, N, ltc, self.get_time()])
+
+                    seq = self.edges_seq.get((M,N))
+                    msg = json.dumps([M, N, ltc, seq,self.id])
+                    # previous record CANNONT use newest seq
                     self.send_to_neighbor(neighbor,msg)
 
             else:
 
                 if old_latency != latency:
+                    # update edges version
+                    self.edges_seq.update({(self.id,neighbor): self.get_time()})
+                    self.edges_seq.update({(neighbor,self.id): self.get_time()})
                     # share link to neighbors
-                    # msg = json.dumps([self.id, neighbor, latency, self.seq])
-                    msg = json.dumps([self.id, neighbor, latency, self.get_time()])
+
+                    msg = json.dumps([self.id, neighbor, latency, self.get_time(),self.id])
                     # self.seq += 1
                     self.send_to_neighbors(msg)
-                    # print("nodeID=", self.id, neighbor,latency, " , new latency, NO.", self.get_time())
 
 
     # Fill in this function
     def process_incoming_routing_message(self, m):
+        # reconstruct msg, add source
+        # 1. send to neighbors except source
+        # 2. if get old version, give back new one
 
-        new_node1, new_node2, ltc, seq = json.loads(m)
+        new_node1, new_node2, ltc, seq, src = json.loads(m)
 
         # update current edge latency
-        if not self.edges_seq.get((new_node1,new_node2)):
+        if self.edges_seq.get((new_node1,new_node2)) is None:
             # print("nodeID=",self.id," receive NEW NODE:", new_node1,new_node2,ltc)
             self.edges_seq.update({(new_node1,new_node2): seq})
             self.edges_seq.update({(new_node2,new_node1): seq})
@@ -83,7 +94,11 @@ class Link_State_Node(Node):
                 self.all_edges.pop((new_node2,new_node1))
                 self.all_edges.pop((new_node1, new_node2))
 
-            self.send_to_neighbors(m)
+            # self.send_to_neighbors(m)???
+            for nei in self.neighbors:
+                if nei != src:
+                    msg = json.dumps([new_node1, new_node2, ltc, seq, self.id])
+                    self.send_to_neighbor(nei,msg)
 
         elif seq > self.edges_seq.get((new_node2,new_node1)):
             # print("nodeID=", self.id, " receive NEW UPDATE:", new_node1, new_node2, ltc)
@@ -97,18 +112,24 @@ class Link_State_Node(Node):
                 self.all_edges.pop((new_node2,new_node1))
                 self.all_edges.pop((new_node1, new_node2))
 
-            self.send_to_neighbors(m)
+            # self.send_to_neighbors(m)???
+            for nei in self.neighbors:
+                if nei != src:
+                    msg = json.dumps([new_node1, new_node2, ltc, seq, self.id])
+                    self.send_to_neighbor(nei,msg)
 
         else:
-            # print(self.id,"got old news from",new_node1,new_node2,ltc,seq,self.edges_seq.get((new_node1,new_node2)))
-            # print(self.all_edges.get((new_node2,new_node1)))
-            # print("==")
+            # send back newest msg to who gives old one
+            if seq < self.edges_seq.get((new_node2,new_node1)):
+                seq = self.edges_seq.get((new_node1,new_node2))
+                ltc = self.all_edges.get((new_node1,new_node2))
+                msg = json.dumps([new_node1, new_node2, ltc, seq, self.id])
+                self.send_to_neighbor(src, msg)
             return
 
 
     # Return a neighbor, -1 if no path to destination
     def get_next_hop(self, destination):
-        print("starat, destination:",self.id, destination)
         # initialize the unvisited Q
         dist = {}
         prev = {}
@@ -134,7 +155,6 @@ class Link_State_Node(Node):
                     min_node = ver
             Q.remove(min_node)
             nb_of_mincode = self.get_neighbors(min_node)
-            print(min_node,"'s neighbors:", nb_of_mincode)
 
             for nei in nb_of_mincode:
                 if nei in Q:
@@ -142,9 +162,6 @@ class Link_State_Node(Node):
                     if alt < dist[nei]:
                         dist[nei] = alt
                         prev[nei] = min_node
-
-        print("dist[]:",dist)
-        print("prev[]:",prev)
 
         return prev.get(self.id)
 
