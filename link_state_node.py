@@ -10,8 +10,6 @@ class Link_State_Node(Node):
         super().__init__(id)
         self.all_edges = {} # (A,B):latency
         self.edges_seq = {} # (A,B):seq
-        self.seq = 0
-
 
     # Return a string
     def __str__(self):
@@ -33,9 +31,10 @@ class Link_State_Node(Node):
             self.all_edges.pop((self.id,neighbor))
             self.all_edges.pop((neighbor, self.id))
 
-            msg = json.dumps([self.id, neighbor, latency, self.seq])
+            msg = json.dumps([self.id, neighbor, latency, self.get_time()])
+
+            # self.seq += 1
             self.send_to_neighbors(msg)
-            self.seq += 1
 
 
         else:
@@ -45,29 +44,25 @@ class Link_State_Node(Node):
 
             if neighbor not in self.neighbors:
                 self.neighbors.append(neighbor)
-
-                msg = json.dumps([self.id, neighbor, latency, self.seq])
+                # self.seq += 1
+                msg = json.dumps([self.id, neighbor, latency, self.get_time()])
                 self.send_to_neighbors(msg)
 
                 # share link to neighbors
                 for M,N in self.all_edges.keys():
                     ltc = self.all_edges.get((M,N))
-                    msg = json.dumps([M, N, ltc, self.seq])
+                    msg = json.dumps([M, N, ltc, self.get_time()])
                     self.send_to_neighbor(neighbor,msg)
-
-                self.seq += 1
-
 
             else:
 
                 if old_latency != latency:
                     # share link to neighbors
-                    msg = json.dumps([self.id, neighbor, latency, self.seq])
+                    # msg = json.dumps([self.id, neighbor, latency, self.seq])
+                    msg = json.dumps([self.id, neighbor, latency, self.get_time()])
+                    # self.seq += 1
                     self.send_to_neighbors(msg)
-                    self.seq += 1
-
-        print(self.id,"get all_edges:",len(self.all_edges.keys()))
-        print("------")
+                    # print("nodeID=", self.id, neighbor,latency, " , new latency, NO.", self.get_time())
 
 
     # Fill in this function
@@ -76,7 +71,8 @@ class Link_State_Node(Node):
         new_node1, new_node2, ltc, seq = json.loads(m)
 
         # update current edge latency
-        if not self.edges_seq.get((new_node1, new_node2)):
+        if not self.edges_seq.get((new_node1,new_node2)):
+            # print("nodeID=",self.id," receive NEW NODE:", new_node1,new_node2,ltc)
             self.edges_seq.update({(new_node1,new_node2): seq})
             self.edges_seq.update({(new_node2,new_node1): seq})
 
@@ -89,7 +85,8 @@ class Link_State_Node(Node):
 
             self.send_to_neighbors(m)
 
-        elif seq > self.edges_seq[(new_node1,new_node2)]:
+        elif seq > self.edges_seq.get((new_node2,new_node1)):
+            # print("nodeID=", self.id, " receive NEW UPDATE:", new_node1, new_node2, ltc)
             self.edges_seq.update({(new_node1,new_node2): seq})
             self.edges_seq.update({(new_node2,new_node1): seq})
 
@@ -103,11 +100,15 @@ class Link_State_Node(Node):
             self.send_to_neighbors(m)
 
         else:
+            # print(self.id,"got old news from",new_node1,new_node2,ltc,seq,self.edges_seq.get((new_node1,new_node2)))
+            # print(self.all_edges.get((new_node2,new_node1)))
+            # print("==")
             return
 
 
     # Return a neighbor, -1 if no path to destination
     def get_next_hop(self, destination):
+        print("starat, destination:",self.id, destination)
         # initialize the unvisited Q
         dist = {}
         prev = {}
@@ -133,16 +134,17 @@ class Link_State_Node(Node):
                     min_node = ver
             Q.remove(min_node)
             nb_of_mincode = self.get_neighbors(min_node)
-            if nb_of_mincode:
-                for nei in nb_of_mincode:
+            print(min_node,"'s neighbors:", nb_of_mincode)
+
+            for nei in nb_of_mincode:
+                if nei in Q:
                     alt = dist[min_node] + self.all_edges.get((min_node,nei))
                     if alt < dist[nei]:
                         dist[nei] = alt
                         prev[nei] = min_node
-            else: continue
 
-        # print("dist[]:",dist)
-        # print("prev[]:",prev)
+        print("dist[]:",dist)
+        print("prev[]:",prev)
 
         return prev.get(self.id)
 
@@ -154,6 +156,7 @@ class Link_State_Node(Node):
                 ls.append(N)
             if N == node and M not in ls:
                 ls.append(M)
+
         return ls
 
     def get_graph_nodes(self):
